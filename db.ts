@@ -1,11 +1,20 @@
 // db.js
 import Dexie, { type EntityTable } from "dexie";
 
-interface Chat {
-  chat;
+interface Message {
+  chatId: string;
+  messageId: string;
+  content: {};
+  timestamp: number;
+  sender: string;
+  recipient: string;
 }
 
-export const db = new Dexie("newscastDb");
+export const db = new Dexie("newscastDb") as Dexie & {
+  messages: EntityTable<Message, "messageId">;
+};
 db.version(1).stores({
-  friends: "++id, name, age", // Primary key and indexed props
+  messages: "chatId, messageId, recipient", // Primary key and indexed props
 });
+
+export type { Message };
