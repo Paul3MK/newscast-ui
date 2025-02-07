@@ -10,6 +10,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField } from "../form";
+import SnowflakeGenerator from "@/snowflake";
+import { db } from "@/db";
 
 const chatInputSchema = z.object({
   input: z.string(),
@@ -28,13 +30,23 @@ export default function ChatInput({ chatId }: { chatId: string }) {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof chatInputSchema>) => {
-    console.log(values);
+  const onSubmit = async (values: z.infer<typeof chatInputSchema>) => {
+    console.log(values, new SnowflakeGenerator(1).generate());
+    const id = await db.messages.add({
+      chatId: chatId,
+      messageId: new SnowflakeGenerator(1).generate().toString(),
+      content: { text: values.input },
+      timestamp: Date.now(),
+      sender: "7283332958067363841",
+      recipient: "aifwef",
+    });
+    console.log(id);
     if (isReady) {
       const recipient = value?.chatList.filter((t) => t.chatId == chatId)[0]
         .phone_number;
-      send(
+      console.log(
         JSON.stringify({
+          message_id: new SnowflakeGenerator(1).generate().toString(),
           message_timestamp: Date.now(),
           message_body: values.input,
           message_chat: chatId,
