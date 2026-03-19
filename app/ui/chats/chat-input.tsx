@@ -32,30 +32,46 @@ export default function ChatInput({ chatId }: { chatId: string }) {
 
   const onSubmit = async (values: z.infer<typeof chatInputSchema>) => {
     console.log(values, new SnowflakeGenerator(1).generate());
-    const id = await db.messages.add({
-      chatId: chatId,
-      messageId: new SnowflakeGenerator(1).generate().toString(),
-      content: { text: values.input },
-      timestamp: Date.now(),
-      sender: "7283332958067363841",
-      recipient: "aifwef",
-    });
-    console.log(id);
-    if (isReady) {
-      const recipient = value?.chatList.filter((t) => t.chatId == chatId)[0]
-        .phone_number;
-      console.log(
-        JSON.stringify({
-          message_id: new SnowflakeGenerator(1).generate().toString(),
-          message_timestamp: Date.now(),
-          message_body: values.input,
-          message_chat: chatId,
-          message_sender: "7283332958067363841",
-          message_recipient: recipient,
-        }),
-      );
+    const recipient = (
+      await db.chats.where("chatId").equals(chatId).toArray()
+    )[0].phoneNumber;
+    try {
+      const messageId = new SnowflakeGenerator(1).generate().toString();
+      const id = await db.messages.add({
+        chatId: chatId,
+        messageId,
+        content: values.input,
+        timestamp: Date.now(),
+        sender: "7283332958067363841",
+        recipient,
+        role: "user",
+        createdAt: new Date(),
+        syncStatus: "created",
+      });
+      if (id) {
+        await db.chats.update(chatId, {
+          lastMessageAt: new Date(),
+        });
+      }
+
+      console.log(id);
+
+      if (isReady) {
+        send(
+          JSON.stringify({
+            message_id: messageId,
+            message_timestamp: Date.now(),
+            message_body: values.input,
+            message_chat: chatId,
+            message_sender: "7283332958067363841",
+            message_recipient: recipient,
+          }),
+        );
+      }
+      form.reset();
+    } catch (e) {
+      console.warn(e);
     }
-    form.reset();
   };
 
   return (
@@ -87,19 +103,5 @@ export default function ChatInput({ chatId }: { chatId: string }) {
         </form>
       </Form>
     </div>
-  );
-}
-
-async function SendMessage() {
-  // const ws = new WebSocket("ws://127.0.0.1:8002/ws/chat");
-
-  websocket.send(
-    JSON.stringify({
-      message_timestamp: Date.now(),
-      message_body: message,
-      message_status: "delivered",
-      message_sender: "9999",
-      message_recipient: recipient,
-    }),
   );
 }

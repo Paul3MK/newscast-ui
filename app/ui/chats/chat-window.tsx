@@ -12,13 +12,19 @@ import {
 import { ChatBubble } from "./chat-bubble";
 import { isArray } from "util";
 import { ChatContext } from "./chat-context";
+import { db } from "@/db";
+import { useLiveQuery } from "dexie-react-hooks";
 
 export default function ChatWindow({ chatId }: { chatId: string }) {
   const { isReady, send, value } = useContext(ChatContext);
-  const [messages, setMessages] = useState<[]>([]);
+  // const [messages, setMessages] = useState<[]>([]);
   const hasPageBeenRendered = useRef(false);
 
   const windowRef = useRef(null);
+
+  const messages = useLiveQuery(() =>
+    db.messages.where("chatId").equals(chatId).toArray(),
+  );
 
   useEffect(() => {
     if (chatId) {
@@ -49,14 +55,17 @@ export default function ChatWindow({ chatId }: { chatId: string }) {
       ref={windowRef}
     >
       {chatId}
-      {value?.chat?.map((message) => (
-        <ChatBubble
-          key={message.messageId}
-          content={message.content}
-          sender={message.authorId}
-          time={Number(message.timestamp)}
-        />
-      ))}
+      {messages &&
+        messages.map((message) => (
+          <ChatBubble
+            key={message.messageId}
+            content={message.content}
+            sender={message.sender}
+            time={Number(message.timestamp)}
+            status={message.syncStatus}
+            messageId={message.messageId}
+          />
+        ))}
     </div>
   );
 }

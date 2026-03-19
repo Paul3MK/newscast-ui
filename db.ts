@@ -7,14 +7,32 @@ interface Message {
   content: {};
   timestamp: number;
   sender: string;
-  recipient: string;
+  recipient?: string;
+  role?: "user" | "assistant";
+  createdAt: Date;
+  syncStatus: "created" | "synced";
+  deliveryStatus?:
+    | "sent"
+    | "delivered"
+    | "read"
+    | "failed"
+    | "unavailable"
+    | "accepted";
+}
+
+interface Chat {
+  chatId: string;
+  lastMessageAt?: Date;
+  phoneNumber: string;
 }
 
 export const db = new Dexie("newscastDb") as Dexie & {
   messages: EntityTable<Message, "messageId">;
+  chats: EntityTable<Chat, "chatId">;
 };
 db.version(1).stores({
-  messages: "chatId, messageId, recipient", // Primary key and indexed props
+  messages: "messageId, chatId, recipient, syncStatus", // Primary key and indexed props
+  chats: "chatId, phoneNumber",
 });
 
 export type { Message };
